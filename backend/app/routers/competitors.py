@@ -13,6 +13,7 @@ from app.models import (
     Snapshot,
     now_iso,
 )
+from app.services import trustmrr
 from app.services.diff import classify_severity, summarize, unified_diff
 from app.services.fetcher import Fetcher, urls_for
 from app.store import get_store
@@ -20,7 +21,12 @@ from app.store import get_store
 router = APIRouter(prefix="/competitors", tags=["competitors"])
 
 
-@router.post("", response_model=Competitor, status_code=201, responses={422: {"model": ErrorResponse}})
+@router.post(
+    "",
+    response_model=Competitor,
+    status_code=201,
+    responses={422: {"model": ErrorResponse}},
+)
 async def create_competitor(body: CompetitorCreate) -> Competitor:
     if "." not in body.domain:
         raise HTTPException(status_code=422, detail="Invalid domain")
@@ -34,7 +40,11 @@ async def list_competitors() -> list[Competitor]:
     return get_store().list_competitors()
 
 
-@router.get("/{competitor_id}", response_model=Competitor, responses={404: {"model": ErrorResponse}})
+@router.get(
+    "/{competitor_id}",
+    response_model=Competitor,
+    responses={404: {"model": ErrorResponse}},
+)
 async def get_competitor(competitor_id: str) -> Competitor:
     c = get_store().get_competitor(competitor_id)
     if not c:
@@ -42,7 +52,11 @@ async def get_competitor(competitor_id: str) -> Competitor:
     return c
 
 
-@router.delete("/{competitor_id}", status_code=204, responses={404: {"model": ErrorResponse}})
+@router.delete(
+    "/{competitor_id}",
+    status_code=204,
+    responses={404: {"model": ErrorResponse}},
+)
 async def delete_competitor(competitor_id: str) -> None:
     if not get_store().delete_competitor(competitor_id):
         raise HTTPException(status_code=404, detail="Competitor not found")
@@ -106,6 +120,20 @@ async def refresh_competitor(competitor_id: str, request: Request) -> list[Chang
 )
 async def get_revenue(competitor_id: str) -> RevenueContext | None:
     store = get_store()
-    if not store.get_competitor(competitor_id):
+    competitor = store.get_competitor(competitor_id)
+    if not competitor:
         raise HTTPException(status_code=404, detail="Competitor not found")
-    return store.get_revenue(competitor_id)
+
+    cached = store.get_revenue(competitor_id)
+    if cached and not trustmrr.is_stale(cached.verified_at):
+        return cached
+
+    if not competitor.trustmrr_slug:
+        return cached
+
+    fresh = await trustmrr.fetch_revenue(competitor.trustmrr_slug)
+    if fresh:
+        fresh.competitor_id = competitor_id
+        store.set_revenue(fresh)
+        return fresh
+    return cached

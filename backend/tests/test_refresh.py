@@ -52,3 +52,17 @@ def test_acknowledge_unknown(client, fake_fetcher):
     cid = _create(client)
     r = client.post(f"/competitors/{cid}/changes/nope/acknowledge")
     assert r.status_code == 404
+
+
+class TimeoutFetcher:
+    async def fetch(self, url: str) -> str:
+        raise TimeoutError("simulated timeout")
+
+
+def test_timeout_returns_502(client):
+    from app.main import app
+
+    app.state.fetcher = TimeoutFetcher()
+    cid = _create(client)
+    r = client.post(f"/competitors/{cid}/refresh")
+    assert r.status_code == 502

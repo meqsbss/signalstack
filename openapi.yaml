@@ -1,0 +1,517 @@
+openapi: 3.1.0
+info:
+  title: SignalStack API
+  version: 0.1.0
+paths:
+  /competitors:
+    get:
+      tags:
+      - competitors
+      summary: List Competitors
+      operationId: list_competitors_competitors_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Competitor'
+                type: array
+                title: Response List Competitors Competitors Get
+    post:
+      tags:
+      - competitors
+      summary: Create Competitor
+      operationId: create_competitor_competitors_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompetitorCreate'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Competitor'
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /competitors/{competitor_id}:
+    get:
+      tags:
+      - competitors
+      summary: Get Competitor
+      operationId: get_competitor_competitors__competitor_id__get
+      parameters:
+      - name: competitor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Competitor Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Competitor'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - competitors
+      summary: Delete Competitor
+      operationId: delete_competitor_competitors__competitor_id__delete
+      parameters:
+      - name: competitor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Competitor Id
+      responses:
+        '204':
+          description: Successful Response
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /competitors/{competitor_id}/refresh:
+    post:
+      tags:
+      - competitors
+      summary: Refresh Competitor
+      operationId: refresh_competitor_competitors__competitor_id__refresh_post
+      parameters:
+      - name: competitor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Competitor Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChangeEvent'
+                title: Response Refresh Competitor Competitors  Competitor Id  Refresh
+                  Post
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /competitors/{competitor_id}/revenue:
+    get:
+      tags:
+      - competitors
+      summary: Get Revenue
+      operationId: get_revenue_competitors__competitor_id__revenue_get
+      parameters:
+      - name: competitor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Competitor Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                anyOf:
+                - $ref: '#/components/schemas/RevenueContext'
+                - type: 'null'
+                title: Response Get Revenue Competitors  Competitor Id  Revenue Get
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /competitors/{competitor_id}/changes:
+    get:
+      tags:
+      - changes
+      summary: List Changes
+      operationId: list_changes_competitors__competitor_id__changes_get
+      parameters:
+      - name: competitor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Competitor Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChangeEvent'
+                title: Response List Changes Competitors  Competitor Id  Changes Get
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /competitors/{competitor_id}/changes/{event_id}/acknowledge:
+    post:
+      tags:
+      - changes
+      summary: Acknowledge
+      operationId: acknowledge_competitors__competitor_id__changes__event_id__acknowledge_post
+      parameters:
+      - name: competitor_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Competitor Id
+      - name: event_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Event Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeEvent'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /events/{event_id}/acknowledge:
+    post:
+      tags:
+      - events
+      summary: Acknowledge Direct
+      operationId: acknowledge_direct_events__event_id__acknowledge_post
+      parameters:
+      - name: event_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Event Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeEvent'
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: Not Found
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /briefings/generate:
+    post:
+      tags:
+      - briefings
+      summary: Generate
+      operationId: generate_briefings_generate_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Briefing'
+  /briefings/latest:
+    get:
+      tags:
+      - briefings
+      summary: Latest
+      operationId: latest_briefings_latest_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Briefing'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /health:
+    get:
+      summary: Health
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties:
+                  type: string
+                type: object
+                title: Response Health Health Get
+components:
+  schemas:
+    Briefing:
+      properties:
+        id:
+          type: string
+          title: Id
+        week_start:
+          type: string
+          title: Week Start
+        summary_text:
+          type: string
+          title: Summary Text
+        top_events:
+          items:
+            $ref: '#/components/schemas/ChangeEvent'
+          type: array
+          title: Top Events
+        created_at:
+          type: string
+          title: Created At
+      type: object
+      required:
+      - week_start
+      - summary_text
+      - top_events
+      title: Briefing
+    ChangeEvent:
+      properties:
+        id:
+          type: string
+          title: Id
+        competitor_id:
+          type: string
+          title: Competitor Id
+        competitor_name:
+          type: string
+          title: Competitor Name
+        source_type:
+          type: string
+          enum:
+          - pricing
+          - changelog
+          - homepage
+          title: Source Type
+        diff_summary:
+          type: string
+          title: Diff Summary
+        diff_full:
+          type: string
+          title: Diff Full
+        severity:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          title: Severity
+        detected_at:
+          type: string
+          title: Detected At
+        acknowledged:
+          type: boolean
+          title: Acknowledged
+          default: false
+      type: object
+      required:
+      - competitor_id
+      - competitor_name
+      - source_type
+      - diff_summary
+      - diff_full
+      - severity
+      title: ChangeEvent
+    Competitor:
+      properties:
+        id:
+          type: string
+          title: Id
+        name:
+          type: string
+          title: Name
+        domain:
+          type: string
+          title: Domain
+        trustmrr_slug:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Trustmrr Slug
+        created_at:
+          type: string
+          title: Created At
+        last_refreshed_at:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Refreshed At
+      type: object
+      required:
+      - name
+      - domain
+      title: Competitor
+    CompetitorCreate:
+      properties:
+        name:
+          type: string
+          title: Name
+        domain:
+          type: string
+          title: Domain
+        trustmrr_slug:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Trustmrr Slug
+      type: object
+      required:
+      - name
+      - domain
+      title: CompetitorCreate
+    ErrorResponse:
+      properties:
+        detail:
+          type: string
+          title: Detail
+      type: object
+      required:
+      - detail
+      title: ErrorResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    RevenueContext:
+      properties:
+        competitor_id:
+          type: string
+          title: Competitor Id
+        mrr:
+          type: integer
+          title: Mrr
+        growth_30d:
+          type: number
+          title: Growth 30D
+        verified_at:
+          type: string
+          title: Verified At
+        source:
+          type: string
+          const: trustmrr
+          title: Source
+          default: trustmrr
+      type: object
+      required:
+      - competitor_id
+      - mrr
+      - growth_30d
+      - verified_at
+      title: RevenueContext
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError

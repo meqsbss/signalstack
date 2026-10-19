@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import init_db
 from app.routers import briefings, changes, competitors
-from app.services.fetcher import FakeFetcher
+from app.services.fetcher import HttpFetcher
 
 app = FastAPI(title="SignalStack API", version="0.1.0")
 
@@ -17,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.state.fetcher = FakeFetcher({})
+app.state.fetcher = HttpFetcher()
 
 app.include_router(competitors.router)
 app.include_router(changes.router)

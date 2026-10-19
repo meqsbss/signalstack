@@ -7,6 +7,7 @@ from app.models import Severity
 
 
 NUMERIC_RE = re.compile(r"\d")
+HEADING_RE = re.compile(r"^[A-Z][A-Z0-9 ]{2,}$|.*:$")
 
 
 def unified_diff(old: str, new: str) -> str:
@@ -17,8 +18,7 @@ def unified_diff(old: str, new: str) -> str:
         n=2,
     )
     text = "\n".join(lines)
-    truncated = text.split("\n")[:40]
-    return "\n".join(truncated)
+    return "\n".join(text.split("\n")[:40])
 
 
 def summarize(diff: str) -> str:
@@ -43,7 +43,7 @@ def classify_severity(diff: str) -> Severity:
 
     for line in added:
         body = line[1:].strip()
-        if body and (body.isupper() or body.endswith(":")):
+        if body and HEADING_RE.match(body):
             return "medium"
 
     return "low"

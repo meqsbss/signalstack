@@ -121,3 +121,10 @@ threatens them. Not a data analyst. Values signal over noise.
 **MVP completed.** All 18 `mvp` issues closed after QA PASS. One
 `user-test-bug` issue (#19) found during manual testing, fixed, and closed.
 17 backend tests and 18 frontend tests pass. `openapi.yaml` generated.
+
+## Status
+
+**MVP completed.** All 18 `mvp` issues closed after QA PASS. Five
+`user-test-bug` issues (#19–#23) found during manual testing, fixed, and
+closed. 18 backend tests and 18 frontend tests pass. `openapi.yaml`
+generated.

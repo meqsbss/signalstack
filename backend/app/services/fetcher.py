@@ -21,11 +21,17 @@ class HttpFetcher:
         self.timeout = timeout
 
     async def fetch(self, url: str) -> str:
-        async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
-            res = await client.get(url)
-            if res.status_code >= 400:
-                raise FileNotFoundError(f"{url} returned {res.status_code}")
-            return self._extract_text(res.text)
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout, follow_redirects=True) as client:
+                res = await client.get(url)
+                if res.status_code >= 400:
+                    raise FileNotFoundError(f"{url} returned {res.status_code}")
+                return self._extract_text(res.text)
+        except httpx.TimeoutException as e:
+            raise TimeoutError(f"Timeout fetching {url}") from e
+        except httpx.HTTPError as e:
+            # SSL, DNS, connection refused, etc. Treat as "page unavailable".
+            raise FileNotFoundError(f"Could not fetch {url}: {e}") from e
 
     @staticmethod
     def _extract_text(html: str) -> str:

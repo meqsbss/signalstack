@@ -66,3 +66,18 @@ def test_timeout_returns_502(client):
     cid = _create(client)
     r = client.post(f"/competitors/{cid}/refresh")
     assert r.status_code == 502
+
+
+class SslErrorFetcher:
+    async def fetch(self, url: str) -> str:
+        raise FileNotFoundError("simulated SSL failure")
+
+
+def test_ssl_error_is_skipped(client):
+    from app.main import app
+
+    app.state.fetcher = SslErrorFetcher()
+    cid = _create(client)
+    r = client.post(f"/competitors/{cid}/refresh")
+    assert r.status_code == 200
+    assert r.json() == []

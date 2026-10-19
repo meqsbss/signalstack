@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.db import init_db
 from app.routers import briefings, changes, competitors
 from app.services.fetcher import FakeFetcher
 
@@ -20,7 +21,13 @@ app.state.fetcher = FakeFetcher({})
 
 app.include_router(competitors.router)
 app.include_router(changes.router)
+app.include_router(changes.events_router)
 app.include_router(briefings.router)
+
+
+@app.on_event("startup")
+async def on_startup() -> None:
+    init_db()
 
 
 @app.get("/health")

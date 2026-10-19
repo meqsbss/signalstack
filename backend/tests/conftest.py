@@ -1,16 +1,30 @@
-from __future__ import annotations
+import os
+
+os.environ["DATABASE_URL"] = "sqlite://"
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
+from app.db import Base
 from app.main import app
 from app.services.fetcher import FakeFetcher
-from app.store.memory import MemoryStore, set_store
+from app.store import set_store
+from app.store.sql import SqlStore
 
 
 @pytest.fixture(autouse=True)
 def fresh_store():
-    set_store(MemoryStore())
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    set_store(SqlStore(Session()))
     yield
 
 

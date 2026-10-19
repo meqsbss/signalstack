@@ -14,8 +14,8 @@ describe("App shell", () => {
     expect(screen.getByRole("heading", { name: "SignalStack" })).toBeInTheDocument();
   });
 
-  it("renders the competitors page at /", () => {
+  it("renders the competitors page at /", async () => {
     render(<App />);
-    expect(screen.getByText(/Competitors list goes here/i)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Competitors" })).toBeInTheDocument();
   });
 });

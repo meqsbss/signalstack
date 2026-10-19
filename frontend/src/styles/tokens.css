@@ -1,0 +1,29 @@
+:root {
+  --bg: #0e1116;
+  --surface: #161b22;
+  --surface-raised: #1f2630;
+  --border: #2a313c;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #4f8cff;
+  --accent-muted: #1f3a66;
+  --severity-low: #3fb950;
+  --severity-medium: #d29922;
+  --severity-high: #f85149;
+  --success: #3fb950;
+  --danger: #f85149;
+
+  --radius-card: 6px;
+  --radius-badge: 4px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}

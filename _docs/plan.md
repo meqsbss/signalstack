@@ -115,3 +115,9 @@ threatens them. Not a data analyst. Values signal over noise.
   severity, view revenue context, and generate a briefing.
 - Stopping and restarting the backend preserves all data.
 - If TrustMRR is unreachable, the app still works and shows a fallback.
+
+## Status
+
+**MVP completed.** All 18 `mvp` issues closed after QA PASS. One
+`user-test-bug` issue (#19) found during manual testing, fixed, and closed.
+17 backend tests and 18 frontend tests pass. `openapi.yaml` generated.

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Commit SHA tag of the tested DEV images to promote"
+        description: "Full 40-character commit SHA of the tested DEV images"
         required: true
         type: string
 
@@ -17,13 +17,21 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - name: Validate image tag
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          if ! echo "$IMAGE_TAG" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "image_tag must be a 40-character commit SHA"
+            exit 1
+          fi
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Promote backend image
+      - name: Promote exact backend image
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
           OWNER: ${{ github.repository_owner }}
@@ -31,7 +39,7 @@ jobs:
           docker pull ghcr.io/$OWNER/signalstack-backend:$IMAGE_TAG
           docker tag ghcr.io/$OWNER/signalstack-backend:$IMAGE_TAG ghcr.io/$OWNER/signalstack-backend:prod
           docker push ghcr.io/$OWNER/signalstack-backend:prod
-      - name: Promote frontend image
+      - name: Promote exact frontend image
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
           OWNER: ${{ github.repository_owner }}
@@ -39,3 +47,21 @@ jobs:
           docker pull ghcr.io/$OWNER/signalstack-frontend:$IMAGE_TAG
           docker tag ghcr.io/$OWNER/signalstack-frontend:$IMAGE_TAG ghcr.io/$OWNER/signalstack-frontend:prod
           docker push ghcr.io/$OWNER/signalstack-frontend:prod
+      - name: Deploy to production host (optional)
+        if: ${{ vars.DEPLOY_HOST != '' }}
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_OWNER: ${{ github.repository_owner }}
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: GHCR_USER,GHCR_TOKEN,GHCR_OWNER
+          script: |
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            mkdir -p ~/signalstack
+            cd ~/signalstack
+            docker compose -f compose.prod.yml pull
+            docker compose -f compose.prod.yml up -d

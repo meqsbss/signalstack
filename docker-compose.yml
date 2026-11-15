@@ -1,0 +1,155 @@
+name: signalstack
+
+services:
+  backend-dev:
+    profiles: ["dev"]
+    build:
+      context: ./backend
+    environment:
+      APP_ENV: development
+      DATABASE_URL: sqlite:////data/signalstack.db
+      OTEL_SERVICE_NAME: signalstack-api-dev
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    volumes:
+      - dev-data:/data
+    expose: ["8091"]
+    depends_on:
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/health')"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  frontend-dev:
+    profiles: ["dev"]
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    environment:
+      BACKEND_HOST: backend-dev
+      BACKEND_PORT: 8091
+    depends_on:
+      backend-dev:
+        condition: service_healthy
+    ports: ["5173:80"]
+    restart: unless-stopped
+
+  backend-prod:
+    profiles: ["prod"]
+    build:
+      context: ./backend
+    environment:
+      APP_ENV: production
+      DATABASE_URL: sqlite:////data/signalstack.db
+      OTEL_SERVICE_NAME: signalstack-api-prod
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    volumes:
+      - prod-data:/data
+    expose: ["8091"]
+    depends_on:
+      otel-collector:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/health')"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  frontend-prod:
+    profiles: ["prod"]
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    environment:
+      BACKEND_HOST: backend-prod
+      BACKEND_PORT: 8091
+    depends_on:
+      backend-prod:
+        condition: service_healthy
+    ports: ["8080:80"]
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./observability/otel-collector.yml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    depends_on: [prometheus, loki, tempo]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    ports: ["9090:9090"]
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
+    volumes:
+      - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports: ["9093:9093"]
+    depends_on: [oncall-agent]
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.3.2
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports: ["3100:3100"]
+    volumes:
+      - loki-data:/loki
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo.yml:/etc/tempo.yaml:ro
+      - tempo-data:/tmp/tempo
+    ports: ["3200:3200", "4319:4317", "4320:4318"]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me-now}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]
+    depends_on: [prometheus, loki, tempo]
+    restart: unless-stopped
+
+  oncall-agent:
+    build:
+      context: ./ops/oncall
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      ONCALL_WEBHOOK_SECRET: ${ONCALL_WEBHOOK_SECRET:-}
+    expose: ["8099"]
+    restart: unless-stopped
+
+volumes:
+  dev-data:
+  prod-data:
+  prometheus-data:
+  loki-data:
+  tempo-data:
+  grafana-data:

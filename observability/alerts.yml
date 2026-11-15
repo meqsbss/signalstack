@@ -1,0 +1,27 @@
+groups:
+  - name: signalstack-alerts
+    rules:
+      - alert: SignalStackHighServerErrorRate
+        expr: sum(rate(signalstack_http_requests_total{http_response_status_code=~"5.."}[5m])) / clamp_min(sum(rate(signalstack_http_requests_total[5m])), 0.001) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SignalStack server error rate is above 5%"
+          description: "More than 5% of API requests returned 5xx responses over the last 5 minutes."
+      - alert: SignalStackRefreshFailures
+        expr: increase(signalstack_refresh_failures_total[10m]) > 2
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Competitor refresh failures detected"
+          description: "More than two competitor refresh operations failed in ten minutes."
+      - alert: SignalStackApiDown
+        expr: absent(signalstack_app_up)
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SignalStack API is not reporting liveness"
+          description: "The API liveness metric is missing from telemetry. Check the backend container and OTLP pipeline."

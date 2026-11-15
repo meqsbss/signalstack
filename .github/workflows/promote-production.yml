@@ -1,0 +1,41 @@
+name: Promote DEV to PROD
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Commit SHA tag of the tested DEV images to promote"
+        required: true
+        type: string
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Promote backend image
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          docker pull ghcr.io/$OWNER/signalstack-backend:$IMAGE_TAG
+          docker tag ghcr.io/$OWNER/signalstack-backend:$IMAGE_TAG ghcr.io/$OWNER/signalstack-backend:prod
+          docker push ghcr.io/$OWNER/signalstack-backend:prod
+      - name: Promote frontend image
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          docker pull ghcr.io/$OWNER/signalstack-frontend:$IMAGE_TAG
+          docker tag ghcr.io/$OWNER/signalstack-frontend:$IMAGE_TAG ghcr.io/$OWNER/signalstack-frontend:prod
+          docker push ghcr.io/$OWNER/signalstack-frontend:prod

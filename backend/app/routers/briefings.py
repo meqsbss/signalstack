@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from app.models import Briefing, ErrorResponse
+import logging\n\nfrom app.observability import record_briefing\nfrom app.models import Briefing, ErrorResponse
 from app.services.briefing import build_briefing
 from app.store import get_store
 
-router = APIRouter(prefix="/briefings", tags=["briefings"])
+router = APIRouter(prefix="/briefings", tags=["briefings"])\nlogger = logging.getLogger(__name__)
 
 
 @router.post("/generate", response_model=Briefing)

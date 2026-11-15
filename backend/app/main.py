@@ -3,7 +3,8 @@ from __future__ import annotations
 import logging
 import os
 
-from fastapi import FastAPI
+import time
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
@@ -20,7 +21,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
 from app.db import engine, init_db
-from app.observability import set_meter
+from app.observability import record_http_request, set_meter
 from app.routers import briefings, changes, competitors
 from app.services.fetcher import HttpFetcher
 
@@ -49,6 +50,7 @@ logger_provider = LoggerProvider(resource=resource)
 logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter(endpoint=endpoint, headers=headers)))
 logging.getLogger().addHandler(LoggingHandler(level=logging.INFO, logger_provider=logger_provider))
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
+logging.getLogger().setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
 app = FastAPI(title="SignalStack API", version="0.1.0")
 

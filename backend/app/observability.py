@@ -1,5 +1,5 @@
 from __future__ import annotations
-from opentelemetry.metrics import Meter
+from opentelemetry.metrics import Meter, Observation
 
 _meter = None
 _http_requests = _http_duration = None

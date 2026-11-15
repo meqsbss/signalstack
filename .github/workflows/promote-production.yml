@@ -47,6 +47,15 @@ jobs:
           docker pull ghcr.io/$OWNER/signalstack-frontend:$IMAGE_TAG
           docker tag ghcr.io/$OWNER/signalstack-frontend:$IMAGE_TAG ghcr.io/$OWNER/signalstack-frontend:prod
           docker push ghcr.io/$OWNER/signalstack-frontend:prod
+      - name: Copy production compose and observability config
+        if: ${{ vars.DEPLOY_HOST != '' }}
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "compose.prod.yml,observability"
+          target: "~/signalstack"
       - name: Deploy to production host (optional)
         if: ${{ vars.DEPLOY_HOST != '' }}
         uses: appleboy/ssh-action@v1.2.0
@@ -54,14 +63,18 @@ jobs:
           GHCR_USER: ${{ github.actor }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHCR_OWNER: ${{ github.repository_owner }}
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ONCALL_WEBHOOK_SECRET: ${{ secrets.ONCALL_WEBHOOK_SECRET }}
         with:
           host: ${{ vars.DEPLOY_HOST }}
           username: ${{ vars.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          envs: GHCR_USER,GHCR_TOKEN,GHCR_OWNER
+          envs: GHCR_USER,GHCR_TOKEN,GHCR_OWNER,GRAFANA_ADMIN_PASSWORD,OPENAI_API_KEY,ONCALL_WEBHOOK_SECRET
           script: |
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             mkdir -p ~/signalstack
             cd ~/signalstack
-            docker compose -f compose.prod.yml pull
-            docker compose -f compose.prod.yml up -d
+            printf '%s\n' "GHCR_OWNER=$GHCR_OWNER" "IMAGE_TAG=prod" "GRAFANA_ADMIN_PASSWORD=$GRAFANA_ADMIN_PASSWORD" "OPENAI_API_KEY=$OPENAI_API_KEY" "ONCALL_WEBHOOK_SECRET=$ONCALL_WEBHOOK_SECRET" > .env
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            docker compose --env-file .env -f compose.prod.yml pull
+            docker compose --env-file .env -f compose.prod.yml up -d

@@ -56,6 +56,14 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           source: "compose.prod.yml,observability"
           target: "~/signalstack"
+      - name: Promote AI on-call image
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          docker pull ghcr.io/$OWNER/signalstack-oncall:$IMAGE_TAG
+          docker tag ghcr.io/$OWNER/signalstack-oncall:$IMAGE_TAG ghcr.io/$OWNER/signalstack-oncall:prod
+          docker push ghcr.io/$OWNER/signalstack-oncall:prod
       - name: Deploy to production host (optional)
         if: ${{ vars.DEPLOY_HOST != '' }}
         uses: appleboy/ssh-action@v1.2.0

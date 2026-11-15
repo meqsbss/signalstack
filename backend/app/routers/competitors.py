@@ -4,7 +4,7 @@ import hashlib
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.models import (
+import logging\n\nfrom app.observability import record_refresh\nfrom app.models import (
     ChangeEvent,
     Competitor,
     CompetitorCreate,
@@ -18,7 +18,7 @@ from app.services.diff import classify_severity, summarize, unified_diff
 from app.services.fetcher import Fetcher, urls_for
 from app.store import get_store
 
-router = APIRouter(prefix="/competitors", tags=["competitors"])
+router = APIRouter(prefix="/competitors", tags=["competitors"])\nlogger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -108,7 +108,7 @@ async def refresh_competitor(competitor_id: str, request: Request) -> list[Chang
             store.add_event(event)
             new_events.append(event)
 
-    competitor.last_refreshed_at = now_iso()
+    record_refresh(True, len(new_events))\n    logger.info("Competitor refreshed", extra={"competitor_id": competitor_id, "change_events": len(new_events)})\n    competitor.last_refreshed_at = now_iso()
     store.update_competitor(competitor)
     return new_events
 

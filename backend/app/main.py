@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 import os
-
 import time
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from opentelemetry import metrics, trace
@@ -30,7 +30,6 @@ resource = Resource.create({
     "service.version": "0.1.0",
     "deployment.environment": os.getenv("APP_ENV", "development"),
 })
-
 endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel-collector:4317")
 headers = os.getenv("OTEL_EXPORTER_OTLP_HEADERS")
 
@@ -53,7 +52,6 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logging.getLogger().setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
 app = FastAPI(title="SignalStack API", version="0.1.0")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:8080").split(","),
@@ -61,7 +59,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 app.state.fetcher = HttpFetcher()
 app.include_router(competitors.router)
 app.include_router(changes.router)
@@ -76,6 +73,20 @@ async def on_startup() -> None:
 
 
 FastAPIInstrumentor.instrument_app(app)
+
+
+@app.middleware("http")
+async def collect_http_metrics(request: Request, call_next):
+    started = time.perf_counter()
+    status = 500
+    try:
+        response = await call_next(request)
+        status = response.status_code
+        return response
+    finally:
+        route = request.scope.get("route")
+        route_name = getattr(route, "path", "unmatched")
+        record_http_request(request.method, route_name, status, time.perf_counter() - started)
 
 
 @app.get("/health")

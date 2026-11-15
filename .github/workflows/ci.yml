@@ -78,3 +78,12 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/signalstack-frontend:dev
             ghcr.io/${{ github.repository_owner }}/signalstack-frontend:${{ github.sha }}
+      - name: Build and push AI on-call image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ops/oncall
+          file: ./ops/oncall/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/signalstack-oncall:dev
+            ghcr.io/${{ github.repository_owner }}/signalstack-oncall:${{ github.sha }}

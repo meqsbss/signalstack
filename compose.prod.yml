@@ -1,0 +1,96 @@
+name: signalstack-prod
+services:
+  backend:
+    image: ghcr.io/${GHCR_OWNER}/signalstack-backend:${IMAGE_TAG:-prod}
+    environment:
+      APP_ENV: production
+      DATABASE_URL: sqlite:////data/signalstack.db
+      OTEL_SERVICE_NAME: signalstack-api-prod
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+    volumes: [prod-data:/data]
+    expose: ["8091"]
+    depends_on: [otel-collector]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/health')"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
+  frontend:
+    image: ghcr.io/${GHCR_OWNER}/signalstack-frontend:${IMAGE_TAG:-prod}
+    environment:
+      BACKEND_HOST: backend
+      BACKEND_PORT: 8091
+    ports: ["8080:80"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes: ["./observability/otel-collector.yml:/etc/otelcol-contrib/config.yaml:ro"]
+    depends_on: [prometheus, loki, tempo]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.path=/prometheus"]
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
+    volumes: ["./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro"]
+    depends_on: [oncall-agent]
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.3.2
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes: [loki-data:/loki]
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo.yml:/etc/tempo.yaml:ro
+      - tempo-data:/tmp/tempo
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in server .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]
+    depends_on: [prometheus, loki, tempo]
+    restart: unless-stopped
+
+  oncall-agent:
+    image: ghcr.io/${GHCR_OWNER}/signalstack-oncall:${IMAGE_TAG:-prod}
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      ONCALL_WEBHOOK_SECRET: ${ONCALL_WEBHOOK_SECRET:-}
+    expose: ["8099"]
+    restart: unless-stopped
+
+volumes:
+  prod-data:
+  prometheus-data:
+  loki-data:
+  tempo-data:
+  grafana-data:

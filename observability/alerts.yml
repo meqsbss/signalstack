@@ -18,10 +18,10 @@ groups:
           summary: "Competitor refresh failures detected"
           description: "More than two competitor refresh operations failed in ten minutes."
       - alert: SignalStackApiDown
-        expr: up{job="otel-collector"} == 0
+        expr: absent(signalstack_app_up)
         for: 1m
         labels:
           severity: critical
         annotations:
-          summary: "SignalStack telemetry collector is down"
-          description: "Prometheus cannot scrape the OpenTelemetry Collector."
+          summary: "SignalStack API is not reporting liveness"
+          description: "The API liveness metric is missing from telemetry. Check the backend container and OTLP pipeline."
